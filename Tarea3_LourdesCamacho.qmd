@@ -1,0 +1,647 @@
+---
+title: "Tarea 3 Lourdes Camacho"
+lang: es
+format:
+  html:
+    grid:
+      body-width: 1200px 
+---
+
+Instalar las bibliotecas: `openpyxl`, `datetime`, `plotly` y `statsmodels`; para manejar archivos Excel, trabajar con fechas, crear gráficos interactivos y realizar análisis de series temporales, respectivamente. Agregar también la extension `Data Wrangler` para facilitar la manipulación de datos en `pandas`.
+
+
+
+```{python}
+#| echo: false
+
+import numpy as np
+import matplotlib.pyplot as plt
+import yfinance as yf
+import pandas as pd
+
+import matplotlib.ticker as ticker
+import seaborn as sns
+import plotly.express as px
+import plotly.graph_objects as go
+import calendar
+import statsmodels.api as sm
+import statsmodels.graphics.tsaplots as tsaplots
+import statsmodels.tsa.stattools as ts
+import statsmodels.tsa.seasonal as seasonal
+```
+
+
+## Indicadores Económicos del INEGI
+
+En este ejemplo, se muestra cómo cargar y graficar indicadores económicos del INEGI utilizando la biblioteca `pandas` para manejar los datos y `matplotlib` para visualizarlos.   
+
+El objetivo es visualizar la evolución de estos indicadores a lo largo del tiempo, lo que puede ser útil para analizar tendencias, identificar patrones y tomar decisiones informadas basadas en la información económica disponible.
+
+**Cargar datos**
+
+Cargamos el conjunto de datos y mostramos su estructura para entender qué tipo de información contiene y cómo está organizada. Esto nos permitirá seleccionar las columnas relevantes para nuestras gráficas de series temporales.
+
+```{python}
+#| code-fold: true
+
+data_inegi = pd.read_excel("TIE_Inegi_long.xlsx")
+data_inegi.info()
+```
+
+
+
+### Tipo de cambio real
+
+En esta sección, ... Esto puede ayudar a identificar tendencias, patrones estacionales o cambios significativos en el número de asegurados, lo que es relevante para el análisis del mercado laboral y la economía en general.
+
+
+```{python}
+#| code-fold: true
+df_tcr = data_inegi[["Fecha", "Tipo_cambio_real"]].dropna()
+df_tcr.info()
+print(f"Fecha de inicio: {df_tcr['Fecha'].min()}")
+print(f"Fecha de fin: {df_tcr['Fecha'].max()}")
+print("------")
+
+print("Estadísticas descriptivas de tcr:")
+print(df_tcr["Tipo_cambio_real"].describe())
+```
+
+
+
+**Serie temporal de tcr**
+
+Una serie temporal es una secuencia de datos recopilados o registrados en intervalos de tiempo sucesivos. En este caso, se grafican los asegurados permanentes en el tcr a lo largo del tiempo para visualizar su evolución y detectar posibles tendencias o patrones en el mercado laboral.
+
+
+```{python}
+#| code-fold: true
+
+# Configurar la columna "Fecha" como índice para facilitar la manipulación de datos y la creación de gráficos de series temporales.
+df_tcr.set_index("Fecha", inplace=True)
+# Definición de la serie temporal
+tcr_ts = df_tcr["Tipo_cambio_real"]
+print(tcr_ts.info())
+```
+
+
+**Gráfica de la serie temporal de tcr**
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+plt.figure(figsize=(12, 6))
+plt.plot(tcr_ts.index, tcr_ts.values, marker='o', ms=3)
+plt.title('tcr')
+plt.xlabel('Fecha')
+plt.ylabel('Pesos/Dólar')
+plt.grid(alpha=0.3)
+plt.show()
+```
+
+Filtramos datos a partir de 2016 para observar mejor la tendencia en los últimos años.
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+tcr_ts_2016 = tcr_ts[tcr_ts.index >= "2016-01-01"]
+plt.figure(figsize=(12, 6))
+plt.plot(tcr_ts_2016.index, tcr_ts_2016.values, marker='o', ms=5)
+plt.title('tcr (Desde 2016)')
+plt.xlabel('Fecha')
+plt.ylabel('Pesos/Dólar')
+plt.grid(alpha=0.3)
+plt.show()
+```
+
+
+**Gráfica interactiva de la serie temporal de tcr**
+
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+
+fig = px.line(x = tcr_ts_2016.index, y = tcr_ts_2016.values, title='Tipo de cambio real', labels={'y': 'Pesos/Dólar', 'x': 'Fecha'})
+fig.update_xaxes(rangeslider_visible=True)
+```
+
+
+**Comparación anual TCR**
+
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+# Preparación de datos para la gráfica de comparación anual
+df_tcr_anual = tcr_ts_2016.reset_index()
+df_tcr_anual['Año'] = df_tcr_anual['Fecha'].dt.year
+df_tcr_anual['Mes'] = df_tcr_anual['Fecha'].dt.month
+df_tcr_anual["Nombre_mes"] = df_tcr_anual['Fecha'].dt.strftime('%b')
+
+
+plt.figure(figsize=(12, 6))
+sns.lineplot(data=df_tcr_anual, x='Nombre_mes', y='Tipo_cambio_real', hue='Año', marker='o', palette='tab10')
+plt.title('Comparación Anual de tcr')
+plt.xlabel('Mes')
+plt.ylabel('Pesos/Dólar')
+plt.legend(title='Año', bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.grid(alpha=0.3)
+plt.show()
+```
+
+Al comparar los valores por año, se observan diferencias importantes entre periodos. Algunos años presentan niveles más altos del indicador, mientras que otros muestran disminuciones, lo que evidencia que el comportamiento financiero varía dependiendo del contexto económico de cada año.
+
+
+**Comparación mensual de TCR**
+
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+plt.figure(figsize=(12, 6))
+sns.lineplot(data=df_tcr_anual, x='Año', y='Tipo_cambio_real', hue='Nombre_mes', marker='o', palette='tab10')
+plt.title('Comparación Mensual de tcr')
+plt.xlabel('Año')
+plt.ylabel('Pesos/Dólar')
+plt.legend(title='Mes', bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.grid(alpha=0.3)
+plt.show()
+```
+
+
+
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+fig = px.line(df_tcr_anual, x='Año', y='Tipo_cambio_real', markers=True, color='Nombre_mes', title='Comparación Mensual de tcr', labels={'Tipo_cambio_real': 'Pesos/Dólar'})
+fig.update_layout(legend_title_text='Mes', plot_bgcolor='rgba(194, 190, 190, 0)', xaxis=dict(tickmode='linear'))
+fig.update
+fig.update_xaxes(dtick=1, gridcolor='rgba(138, 132, 132, 0.77)')
+fig.update_yaxes(gridcolor='rgba(138, 132, 132, 0.77)')
+
+```
+
+Con esta gráfica se busca visualizar la distribución del tipo de cambio real (TCR) por trimestre a lo largo de los años. Esto permite identificar patrones estacionales, la variabilidad del tipo de cambio en cada trimestre y posibles valores atípicos (outliers). El análisis facilita la detección de comportamientos irregulares y tendencias en el tiempo, lo cual es útil para la interpretación económica y la toma de decisiones informadas.
+
+
+**Boxplot trimestral de TCR**
+
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+df_tcr_anual['Trimestre'] = df_tcr_anual['Fecha'].dt.to_period('Q')
+
+# Variable combinada de año y trimestre para el eje x
+df_tcr_anual['Año_Trimestre'] = df_tcr_anual['Año'].astype(str) + '-Q' + df_tcr_anual['Trimestre'].dt.quarter.astype(str)
+
+plt.figure(figsize=(12, 6))
+sns.boxplot(data=df_tcr_anual, x='Año_Trimestre', y='Tipo_cambio_real', hue='Año', palette= 'Paired')
+plt.title('Boxplot Trimestral de TCR')
+plt.xlabel('Año-Trimestre')
+plt.ylabel('Pesos/Dólar')
+plt.xticks(rotation=45)
+plt.grid(alpha=0.3)
+plt.legend(title='Año', bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.show()
+
+```
+
+Con esta gráfica se busca visualizar la distribución del tipo de cambio real (TCR) por trimestre a lo largo de los años. Esto permite identificar patrones estacionales, la variabilidad del tipo de cambio en cada trimestre y posibles valores atípicos (outliers). El análisis facilita la detección de comportamientos irregulares y tendencias en el tiempo, lo cual es útil para la interpretación económica y la toma de decisiones informadas.
+
+
+**Heatmap TCR**
+
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+# Preparación de datos para el heatmap
+heatmap_data = df_tcr_anual.pivot_table(index='Mes', columns='Año', values='Tipo_cambio_real')
+
+plt.figure(figsize=(12, 6))
+sns.heatmap(heatmap_data, annot=True, linewidths=0.5, fmt=".1e", cmap='Spectral')
+plt.title('Heatmap de TCR por Mes y Año')
+plt.xlabel('Año')
+plt.ylabel('Mes')
+plt.yticks(ticks = np.linspace(0.5, 11.5, 12), labels=[calendar.month_abbr[i] for i in range(1, 13)], rotation=0)
+plt.show()
+```
+
+El mapa de calor permite visualizar la intensidad de los valores financieros a lo largo del tiempo. Se observan zonas con mayor concentración de valores altos y bajos, lo que facilita identificar patrones y posibles comportamientos repetitivos en ciertos periodos.
+
+
+**Superficie TCR**
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+Z = heatmap_data.values
+X = heatmap_data.columns.astype(str) #Años
+Y = calendar.month_abbr[1:13] #Meses
+
+fig = go.Figure(data=[go.Surface(z=Z, x=X, y=Y, 
+                contours=dict(
+        x=dict(
+            show=True,          # Líneas por año sobre la superficie
+            color="white",
+            width=2
+        ),
+        y=dict(
+            show=True,          # Líneas por mes sobre la superficie
+            color="white",
+            width=2
+        )
+    ),
+                colorscale='Spectral')])
+fig.update_layout(title='Superficie TCR',
+                  scene=dict(xaxis_title='Año', yaxis_title='Mes', zaxis_title='Pesos/Dólar'),
+                  autosize=True,
+                  height=600)
+```
+
+La gráfica de superficie tridimensional muestra la evolución del TCR considerando años, meses y valores del indicador. Se observan cambios en la superficie que reflejan incrementos y disminuciones a lo largo del tiempo, permitiendo identificar tendencias generales y variaciones más complejas.
+
+
+**Descomposición de la serie temporal de TCR**
+
+Una serie temporal $Y_t$ se puede descomponer en tres componentes principales: tendencia ($T_t$), estacionalidad ($S_t$) y ruido o componente aleatorio ($R_t$). La fórmula general para la descomposición aditiva es:
+
+\begin{equation}
+Y_t = T_t + S_t + R_t
+\end{equation}
+
+También existe la descomposición multiplicativa, que se expresa como:
+
+\begin{equation}
+Y_t = T_t \times S_t \times R_t
+\end{equation}
+
+
+**Descomposición aditiva de la serie temporal de TCR**
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+#| fig-cap: "Descomposición aditiva de la serie temporal de tcr"
+
+decomposition_add = seasonal.seasonal_decompose(tcr_ts_2016, model='additive', period=12)
+
+plt.figure(figsize=(12, 8))
+plt.subplot(4,1,1)
+plt.plot(tcr_ts_2016,color='blue')
+plt.title('Serie Temporal Original')
+
+plt.subplot(4,1,2)
+plt.plot(decomposition_add.trend,color='orange')
+plt.title('Tendencia')
+
+plt.subplot(4,1,3)
+plt.plot(decomposition_add.seasonal,color='green')
+plt.title('Estacionalidad')
+
+plt.subplot(4,1,4)
+plt.plot(decomposition_add.resid,color='red')
+plt.title('Ruido')
+plt.tight_layout()
+plt.show()
+
+```
+
+
+**Descomposición multiplicativa de la serie temporal de tcr**
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+#| fig-cap: "Descomposición multiplicativa de la serie temporal de tcr"
+
+decomposition_mul = seasonal.seasonal_decompose(tcr_ts_2016, model='multiplicative', period=12)
+plt.figure(figsize=(12, 8))
+plt.subplot(4,1,1)
+plt.plot(tcr_ts_2016,color='blue')
+plt.title('Serie Temporal Original')
+
+plt.subplot(4,1,2)
+plt.plot(decomposition_mul.trend,color='orange')
+plt.title('Tendencia')
+
+plt.subplot(4,1,3)
+plt.plot(decomposition_mul.seasonal,color='green')
+plt.title('Estacionalidad')
+
+plt.subplot(4,1,4)
+plt.plot(decomposition_mul.resid,color='red')
+plt.title('Ruido')
+plt.tight_layout()
+plt.show()
+```
+
+La descomposición de la serie permite separar los valores financieros en sus componentes principales: tendencia, estacionalidad y ruido. La tendencia muestra la dirección general de los datos, la estacionalidad refleja patrones repetitivos y el componente residual captura las variaciones aleatorias no explicadas.
+
+
+## Valores financieros
+
+Ahora vamos a graficar las series temporales de los precios de las acciones de Amazon (AMZN), Apple (AAPL),Microsoft (MSFT), NVIDIA (NVDA) y Facebook (META) utilizando la biblioteca `yfinance` para obtener los datos históricos de las acciones y `matplotlib` para visualizarlos. Esto nos permitirá analizar la evolución de los precios de estas acciones a lo largo del tiempo y comparar su desempeño. El periodo de análisis se establece desde el 1 de enero de 2020 hasta el 31 de diciembre de 2025, lo que nos brinda una visión completa de su comportamiento durante estos años.
+
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+tickers = ["AMZN", "AAPL", "MSFT", "NVDA", "META"]
+start_date = "2020-01-01"
+end_date = "2025-12-31"
+
+df_yf = yf.download(tickers, start=start_date, end=end_date, interval="1d")["Close"]
+```
+
+**Gráfica de los precios de las acciones**
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+fig = go.Figure()
+for ticker in tickers:
+    fig.add_trace(go.Scatter(x=df_yf.index, y=df_yf[ticker], name=ticker))
+fig.update_layout(title='Precios de las acciones (2020-2025)', xaxis_title='Fecha', yaxis_title='Precio (USD)', legend_title_text='Acciones', hovermode='x unified')
+fig.update_xaxes(rangeslider_visible=True, gridcolor='rgba(138, 132, 132, 0.77)')
+fig.update_yaxes(gridcolor='rgba(138, 132, 132, 0.77)')
+fig.show()  
+```
+
+
+```{python}
+print(type(df_yf))
+print(df_yf.columns.tolist())
+print(df_yf.head(2))
+```
+
+
+Ahora seleccionamos la acción de Google (NVDA) para realizar un análisis más detallado de su serie temporal, incluyendo la descomposición de la serie temporal para identificar sus componentes de tendencia, estacionalidad y ruido.
+
+**Candlestick de NVDA**
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+df_nvda_ohlc = yf.download("NVDA", start='2025-11-01', end='2025-12-31', interval="1d")
+nvda = df_nvda_ohlc.xs("NVDA", level=1, axis=1)
+
+fig = go.Figure(data=[go.Candlestick(x=nvda.index,
+                open=nvda['Open'],
+                high=nvda['High'],
+                low=nvda['Low'],
+                close=nvda['Close'])])
+fig.update_layout(title='Gráfico de Velas de NVDA (2020-2025)', xaxis_title='Fecha', yaxis_title='Precio (USD)')
+fig.update_xaxes(rangeslider_visible=True, gridcolor='rgba(138, 132, 132, 0.77)')
+fig.update_yaxes(gridcolor='rgba(138, 132, 132, 0.77)')
+fig.show()
+```
+
+
+
+**Resumen estadístico de los precios de NVDA**
+
+```{python}
+#| code-fold: true
+
+nvda_ts = df_yf["NVDA"].dropna()
+print(nvda_ts.info())
+print(f"Fecha de inicio: {nvda_ts.index.min()}")
+print(f"Fecha de fin: {nvda_ts.index.max()}")
+print("------")
+print("Estadísticas descriptivas de NVDA:")
+print(nvda_ts.describe())
+
+```
+
+**Comparación anual de NVDA**
+
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+nvda_df = nvda_ts.reset_index()
+nvda_df['Año'] = nvda_df['Date'].dt.year
+nvda_df['Mes'] = nvda_df['Date'].dt.month
+nvda_df["Nombre_mes"] = nvda_df['Date'].dt.strftime('%b')
+nvda_df['Dia_año']   = nvda_df['Date'].dt.dayofyear 
+
+plt.figure(figsize=(12, 6))
+sns.lineplot(data=nvda_df, x='Nombre_mes', y='NVDA', hue='Año', marker='o', palette='tab10')
+plt.title('Comparación Anual de NVDA (Mensual)')
+plt.xlabel('Mes')
+plt.ylabel('Precio (USD)')
+plt.legend(title='Año', bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.grid(alpha=0.3)
+plt.show()
+```
+
+
+
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+#| code-fold: true
+#| fig-align: "center"
+
+plt.figure(figsize=(12, 6))
+sns.lineplot(
+    data=nvda_df,
+    x='Dia_año',
+    y='NVDA',
+    hue='Año',
+    palette='tab10',
+    errorbar=None
+)
+
+# Reemplazar números de día por nombres de mes en el eje X
+
+meses_dias = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
+meses_nombres = ['Ene','Feb','Mar','Abr','May','Jun',
+                 'Jul','Ago','Sep','Oct','Nov','Dic']
+plt.xticks(ticks=meses_dias, labels=meses_nombres)
+
+plt.title('Comparación Anual de NVDA (Diaria)')
+plt.xlabel('Mes')
+plt.ylabel('Precio (USD)')
+plt.legend(title='Año', bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
+```
+
+
+**Boxplot trimestral de NVDA**
+
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+
+nvda_df['Trimestre'] = nvda_df['Date'].dt.to_period('Q')
+nvda_df['Año_Trimestre'] = nvda_df['Año'].astype(str) + '-Q' + nvda_df['Trimestre'].dt.quarter.astype(str)
+
+plt.figure(figsize=(12, 6))
+sns.boxplot(data=nvda_df, x='Año_Trimestre', y='NVDA', hue='Año', palette= 'Paired')
+plt.title('Boxplot Trimestral de NVDA')
+plt.xlabel('Año-Trimestre')
+plt.ylabel('Precio (USD)')
+plt.xticks(rotation=45)
+plt.grid(alpha=0.3)
+plt.legend(title='Año', bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.show()
+```
+
+**Heatmap de NVDA**
+
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+
+#| code-fold: true
+#| fig-align: "center"
+
+# Crear columna de día del año para ordenar correctamente
+nvda_df['Mes-dia']  = nvda_df['Date'].dt.strftime('%b-%d')
+
+
+heatmap_data_nvda = nvda_df.pivot_table(
+    index='Mes-dia',
+    columns='Año',
+    values='NVDA'
+)
+
+# Ordenar por día del año (no alfabéticamente)
+orden = (nvda_df.drop_duplicates('Mes-dia')
+                 .sort_values('Dia_año')['Mes-dia']
+                 .tolist())
+heatmap_data_nvda = heatmap_data_nvda.reindex(orden)
+
+# Rellenar NaN para eliminar líneas blancas
+heatmap_data_nvda = heatmap_data_nvda.ffill().bfill()
+
+plt.figure(figsize=(12, 8))
+sns.heatmap(
+    heatmap_data_nvda,
+    annot=False,
+    cmap='Spectral',
+    linewidths=0,        
+    linecolor='none'     
+)
+plt.title('Heatmap de NVDA por Fecha y Año')
+plt.xlabel('Año')
+plt.ylabel('Fecha')
+
+plt.tight_layout()
+plt.show()
+```
+
+
+**Superficie de NVDA**
+
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+
+Z = heatmap_data_nvda.values
+X = heatmap_data_nvda.columns.astype(str) #Años
+Y = heatmap_data_nvda.index #Fechas
+
+fig = go.Figure(data=[go.Surface(z=Z, x=X, y=Y, 
+                contours=dict(
+        x=dict(
+            show=True,          # Líneas por año sobre la superficie
+            color="white",
+            width=2
+        ),
+        y=dict(
+            show=True,          # Líneas por fecha sobre la superficie
+            color="white",
+            width=2
+        )
+    ),
+                colorscale='Spectral')])
+fig.update_layout(title='Superficie de NVDA', scene=dict(xaxis_title='Año', yaxis_title='Fecha', zaxis_title='Precio (USD)'), autosize=True, height=600)
+```
+
+**Descomposición aditiva de NVDA**
+
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+#| fig-cap: "Descomposición aditiva de la serie temporal de NVDA"
+
+
+# Utilizar periodo de 252 para capturar la estacionalidad anual en datos diarios (252 días hábiles por año que es el estándar en finanzas)
+decomposition_add_nvda = seasonal.seasonal_decompose(nvda_ts, model='additive', period=252)
+plt.figure(figsize=(12, 8))
+plt.subplot(4,1,1)
+plt.plot(nvda_ts,color='blue')
+plt.title('Serie Temporal Original')    
+
+plt.subplot(4,1,2)
+plt.plot(decomposition_add_nvda.trend,color='orange')
+plt.title('Tendencia')
+
+plt.subplot(4,1,3)
+plt.plot(decomposition_add_nvda.seasonal,color='green')
+plt.title('Estacionalidad')
+
+plt.subplot(4,1,4)
+plt.plot(decomposition_add_nvda.resid,color='red')
+plt.title('Ruido')
+plt.tight_layout()
+plt.show()
+```
+
+**Descomposición multiplicativa de NVDA**
+
+
+```{python}
+#| code-fold: true
+#| fig-align: "center"
+#| fig-cap: "Descomposición multiplicativa de la serie temporal de NVDA"
+
+decomposition_mul_nvda = seasonal.seasonal_decompose(nvda_ts, model='multiplicative', period=252)
+plt.figure(figsize=(12, 8))
+plt.subplot(4,1,1)
+plt.plot(nvda_ts,color='blue')
+plt.title('Serie Temporal Original')
+
+plt.subplot(4,1,2)
+plt.plot(decomposition_mul_nvda.trend,color='orange')
+plt.title('Tendencia')
+
+plt.subplot(4,1,3)
+plt.plot(decomposition_mul_nvda.seasonal,color='green')
+plt.title('Estacionalidad')
+
+plt.subplot(4,1,4)
+plt.plot(decomposition_mul_nvda.resid,color='red')
+plt.title('Ruido')
+plt.tight_layout()
+plt.show()
+```
+
