@@ -1,0 +1,1293 @@
+---
+title: "Tarea 5. Diferenciación e integración numérica."
+author: "Lourdes Mercedes Camacho Rangel"
+format: 
+  html:
+    grid: 
+      body-width: 1000px
+editor: visual
+jupyter: python3
+---
+
+Importamos packages y funciones necesarias:
+
+```{python}
+#| code-fold: true
+
+import matplotlib.pyplot as plt
+import numpy as np
+import math
+
+import plotly.graph_objects as go
+from scipy.differentiate import derivative
+import numdifftools as nd
+from scipy import integrate
+import pandas as pd
+```
+
+# Ejercicio 1.
+
+Para cada una de las siguientes funciones:
+
+-   Realiza la respectiva gráfica en el intervalo dado.
+
+-   Compara las gráficas de las derivadas aproximadas de la función `derivative` de `Scipy`, con dos tamaños de paso utilizando la función `nd.Derivative` (con `order =2` y `order = 4`, con las opciones de `method`: `forward`, `backward`, `central`) y la derivada *exacta* en tal intervalo.
+
+-   Compara las gráficas de las segundas derivadas aproximadas con dos tamaños de paso utilizando la función `nd.Derivative` y la segunda derivada *exacta* en tal intervalo.
+
+-   Realiza las gráficas de los errores absolutos en cada caso.
+
+a)  $f(x)=e^{2x}-cos 2x$, $x\in [0,2]$
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+import numdifftools as nd
+
+# Función y derivadas exactas
+f = lambda x: np.exp(2*x) - np.cos(2*x)
+
+f1 = lambda x: 2*np.exp(2*x) + 2*np.sin(2*x)
+
+f2 = lambda x: 4*np.exp(2*x) + 4*np.cos(2*x)
+
+# Intervalo
+x = np.linspace(0,2,500)
+
+# Tamaños de paso
+h1 = 1e-2
+h2 = 1e-4
+
+# Primera derivada aproximada
+d_forw_h1 = nd.Derivative(f, method='forward', order=2, step=h1)(x)
+d_forw_h2 = nd.Derivative(f, method='forward', order=2, step=h2)(x)
+
+d_back_h1 = nd.Derivative(f, method='backward', order=2, step=h1)(x)
+d_back_h2 = nd.Derivative(f, method='backward', order=2, step=h2)(x)
+
+d_cent_h1 = nd.Derivative(f, method='central', order=4, step=h1)(x)
+d_cent_h2 = nd.Derivative(f, method='central', order=4, step=h2)(x)
+
+# Función
+plt.figure(figsize=(8,5))
+plt.plot(x,f(x),linewidth=2)
+plt.title(r"$f(x)=e^{2x}-\cos(2x)$")
+plt.xlabel("x")
+plt.ylabel("f(x)")
+plt.grid()
+plt.show()
+
+# Primera derivada
+plt.figure(figsize=(10,6))
+plt.plot(x,f1(x),label="Exacta",linewidth=3)
+plt.plot(x,d_forw_h1,label="Forward h=1e-2")
+plt.plot(x,d_forw_h2,label="Forward h=1e-4")
+plt.plot(x,d_back_h1,label="Backward h=1e-2")
+plt.plot(x,d_back_h2,label="Backward h=1e-4")
+plt.plot(x,d_cent_h1,label="Central h=1e-2")
+plt.plot(x,d_cent_h2,label="Central h=1e-4")
+plt.title("Primera derivada")
+plt.legend()
+plt.grid()
+plt.show()
+
+# Error primera derivada
+plt.figure(figsize=(10,6))
+plt.plot(x,np.abs(d_forw_h1-f1(x)),label="Forward h=1e-2")
+plt.plot(x,np.abs(d_forw_h2-f1(x)),label="Forward h=1e-4")
+plt.plot(x,np.abs(d_back_h1-f1(x)),label="Backward h=1e-2")
+plt.plot(x,np.abs(d_back_h2-f1(x)),label="Backward h=1e-4")
+plt.plot(x,np.abs(d_cent_h1-f1(x)),label="Central h=1e-2")
+plt.plot(x,np.abs(d_cent_h2-f1(x)),label="Central h=1e-4")
+plt.yscale("log")
+plt.title("Error absoluto primera derivada")
+plt.legend()
+plt.grid()
+plt.show()
+
+# Segunda derivada aproximada
+d2_h1 = nd.Derivative(f, n=2, method='central', order=4, step=h1)(x)
+d2_h2 = nd.Derivative(f, n=2, method='central', order=4, step=h2)(x)
+
+# Segunda derivada
+plt.figure(figsize=(10,6))
+plt.plot(x,f2(x),label="Exacta",linewidth=3)
+plt.plot(x,d2_h1,label="h=1e-2")
+plt.plot(x,d2_h2,label="h=1e-4")
+plt.title("Segunda derivada")
+plt.legend()
+plt.grid()
+plt.show()
+
+# Error segunda derivada
+plt.figure(figsize=(10,6))
+plt.plot(x,np.abs(d2_h1-f2(x)),label="h=1e-2")
+plt.plot(x,np.abs(d2_h2-f2(x)),label="h=1e-4")
+plt.yscale("log")
+plt.title("Error absoluto segunda derivada")
+plt.legend()
+plt.grid()
+plt.show()
+```
+
+b)  $f(x)=log(x+2)-(x+1)^2$, $x\in [0,5]$
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+import numdifftools as nd
+
+f = lambda x: np.log(x+2) - (x+1)**2
+
+f1 = lambda x: 1/(x+2) - 2*(x+1)
+
+f2 = lambda x: -1/(x+2)**2 - 2
+
+x = np.linspace(0,5,500)
+
+h1 = 1e-2
+h2 = 1e-4
+
+d_forw_h1 = nd.Derivative(f, method='forward', order=2, step=h1)(x)
+d_forw_h2 = nd.Derivative(f, method='forward', order=2, step=h2)(x)
+
+d_back_h1 = nd.Derivative(f, method='backward', order=2, step=h1)(x)
+d_back_h2 = nd.Derivative(f, method='backward', order=2, step=h2)(x)
+
+d_cent_h1 = nd.Derivative(f, method='central', order=4, step=h1)(x)
+d_cent_h2 = nd.Derivative(f, method='central', order=4, step=h2)(x)
+
+# Función
+plt.figure(figsize=(8,5))
+plt.plot(x,f(x),linewidth=2)
+plt.title(r"$f(x)=\log(x+2)-(x+1)^2$")
+plt.xlabel("x")
+plt.ylabel("f(x)")
+plt.grid()
+plt.show()
+
+# Primera derivada
+plt.figure(figsize=(10,6))
+plt.plot(x,f1(x),label="Exacta",linewidth=3)
+
+plt.plot(x,d_forw_h1,label="Forward h=1e-2")
+plt.plot(x,d_forw_h2,label="Forward h=1e-4")
+
+plt.plot(x,d_back_h1,label="Backward h=1e-2")
+plt.plot(x,d_back_h2,label="Backward h=1e-4")
+
+plt.plot(x,d_cent_h1,label="Central h=1e-2")
+plt.plot(x,d_cent_h2,label="Central h=1e-4")
+
+plt.title("Primera derivada")
+plt.legend()
+plt.grid()
+plt.show()
+
+# Error primera derivada
+plt.figure(figsize=(10,6))
+
+plt.plot(x,np.abs(d_forw_h1-f1(x)),label="Forward h=1e-2")
+plt.plot(x,np.abs(d_forw_h2-f1(x)),label="Forward h=1e-4")
+
+plt.plot(x,np.abs(d_back_h1-f1(x)),label="Backward h=1e-2")
+plt.plot(x,np.abs(d_back_h2-f1(x)),label="Backward h=1e-4")
+
+plt.plot(x,np.abs(d_cent_h1-f1(x)),label="Central h=1e-2")
+plt.plot(x,np.abs(d_cent_h2-f1(x)),label="Central h=1e-4")
+
+plt.yscale("log")
+plt.title("Error absoluto primera derivada")
+plt.xlabel("x")
+plt.ylabel("Error")
+plt.legend()
+plt.grid()
+plt.show()
+
+# Segunda derivada
+d2_h1 = nd.Derivative(f, n=2, method='central', order=4, step=h1)(x)
+d2_h2 = nd.Derivative(f, n=2, method='central', order=4, step=h2)(x)
+
+plt.figure(figsize=(10,6))
+plt.plot(x,f2(x),label="Exacta",linewidth=3)
+plt.plot(x,d2_h1,label="h=1e-2")
+plt.plot(x,d2_h2,label="h=1e-4")
+
+plt.title("Segunda derivada")
+plt.legend()
+plt.grid()
+plt.show()
+
+# Error segunda derivada
+plt.figure(figsize=(10,6))
+plt.plot(x,np.abs(d2_h1-f2(x)),label="h=1e-2")
+plt.plot(x,np.abs(d2_h2-f2(x)),label="h=1e-4")
+
+plt.yscale("log")
+plt.title("Error absoluto segunda derivada")
+plt.xlabel("x")
+plt.ylabel("Error")
+plt.legend()
+plt.grid()
+plt.show()
+```
+
+c)  $f(x)=\sqrt{x} sen(x^2)$, $x\in [0,\pi]$
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+import numdifftools as nd
+
+f = lambda x: np.sqrt(x)*np.sin(x**2)
+
+f1 = lambda x: (
+    np.sin(x**2)/(2*np.sqrt(x))
+    + 2*x*np.sqrt(x)*np.cos(x**2))
+
+f2 = lambda x: (
+    -np.sin(x**2)/(4*x**(3/2))
+    + np.cos(x**2)/np.sqrt(x)
+    + 4*x**(3/2)*np.cos(x**2)
+    - 4*x**(5/2)*np.sin(x**2))
+
+# Evitamos x=0 porque aparecen divisiones entre sqrt(x)
+x = np.linspace(0.01, np.pi, 500)
+
+h1 = 1e-2
+h2 = 1e-4
+
+d_forw_h1 = nd.Derivative(f, method='forward', order=2, step=h1)(x)
+d_forw_h2 = nd.Derivative(f, method='forward', order=2, step=h2)(x)
+
+d_back_h1 = nd.Derivative(f, method='backward', order=2, step=h1)(x)
+d_back_h2 = nd.Derivative(f, method='backward', order=2, step=h2)(x)
+
+d_cent_h1 = nd.Derivative(f, method='central', order=4, step=h1)(x)
+d_cent_h2 = nd.Derivative(f, method='central', order=4, step=h2)(x)
+
+# Función
+plt.figure(figsize=(8,5))
+plt.plot(x,f(x),linewidth=2)
+plt.title(r"$f(x)=\sqrt{x}\sin(x^2)$")
+plt.grid()
+plt.show()
+
+# Primera derivada
+plt.figure(figsize=(10,6))
+plt.plot(x,f1(x),label="Exacta",linewidth=3)
+plt.plot(x,d_forw_h1,label="Forward h=1e-2")
+plt.plot(x,d_forw_h2,label="Forward h=1e-4")
+plt.plot(x,d_back_h1,label="Backward h=1e-2")
+plt.plot(x,d_back_h2,label="Backward h=1e-4")
+plt.plot(x,d_cent_h1,label="Central h=1e-2")
+plt.plot(x,d_cent_h2,label="Central h=1e-4")
+plt.title("Primera derivada")
+plt.legend()
+plt.grid()
+plt.show()
+
+# Error primera derivada
+plt.figure(figsize=(10,6))
+plt.plot(x,np.abs(d_forw_h1-f1(x)),label="Forward h=1e-2")
+plt.plot(x,np.abs(d_forw_h2-f1(x)),label="Forward h=1e-4")
+plt.plot(x,np.abs(d_back_h1-f1(x)),label="Backward h=1e-2")
+plt.plot(x,np.abs(d_back_h2-f1(x)),label="Backward h=1e-4")
+plt.plot(x,np.abs(d_cent_h1-f1(x)),label="Central h=1e-2")
+plt.plot(x,np.abs(d_cent_h2-f1(x)),label="Central h=1e-4")
+plt.yscale("log")
+plt.title("Error absoluto primera derivada")
+plt.legend()
+plt.grid()
+plt.show()
+
+# Segunda derivada
+d2_h1 = nd.Derivative(f, n=2, method='central', order=4, step=h1)(x)
+d2_h2 = nd.Derivative(f, n=2, method='central', order=4, step=h2)(x)
+
+plt.figure(figsize=(10,6))
+plt.plot(x,f2(x),label="Exacta",linewidth=3)
+plt.plot(x,d2_h1,label="h=1e-2")
+plt.plot(x,d2_h2,label="h=1e-4")
+plt.title("Segunda derivada")
+plt.legend()
+plt.grid()
+plt.show()
+
+# Error segunda derivada
+plt.figure(figsize=(10,6))
+plt.plot(x,np.abs(d2_h1-f2(x)),label="h=1e-2")
+plt.plot(x,np.abs(d2_h2-f2(x)),label="h=1e-4")
+plt.yscale("log")
+plt.title("Error absoluto segunda derivada")
+plt.legend()
+plt.grid()
+plt.show()
+```
+
+d)  $f(x)=(cos\,3x)^2-e^{2x}$, $x\in [0,\pi/2]$
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+import numdifftools as nd
+
+f = lambda x: (np.cos(3*x))**2 - np.exp(2*x)
+
+f1 = lambda x: -3*np.sin(6*x) - 2*np.exp(2*x)
+
+f2 = lambda x: -18*np.cos(6*x) - 4*np.exp(2*x)
+
+x = np.linspace(0, np.pi/2, 500)
+
+h1 = 1e-2
+h2 = 1e-4
+
+d_forw_h1 = nd.Derivative(f, method='forward', order=2, step=h1)(x)
+d_forw_h2 = nd.Derivative(f, method='forward', order=2, step=h2)(x)
+
+d_back_h1 = nd.Derivative(f, method='backward', order=2, step=h1)(x)
+d_back_h2 = nd.Derivative(f, method='backward', order=2, step=h2)(x)
+
+d_cent_h1 = nd.Derivative(f, method='central', order=4, step=h1)(x)
+d_cent_h2 = nd.Derivative(f, method='central', order=4, step=h2)(x)
+
+# Función
+plt.figure(figsize=(8,5))
+plt.plot(x,f(x),linewidth=2)
+plt.title(r"$f(x)=\cos^2(3x)-e^{2x}$")
+plt.grid()
+plt.show()
+
+# Primera derivada
+plt.figure(figsize=(10,6))
+plt.plot(x,f1(x),label="Exacta",linewidth=3)
+plt.plot(x,d_forw_h1,label="Forward h=1e-2")
+plt.plot(x,d_forw_h2,label="Forward h=1e-4")
+plt.plot(x,d_back_h1,label="Backward h=1e-2")
+plt.plot(x,d_back_h2,label="Backward h=1e-4")
+plt.plot(x,d_cent_h1,label="Central h=1e-2")
+plt.plot(x,d_cent_h2,label="Central h=1e-4")
+plt.title("Primera derivada")
+plt.legend()
+plt.grid()
+plt.show()
+
+# Error primera derivada
+plt.figure(figsize=(10,6))
+plt.plot(x,np.abs(d_forw_h1-f1(x)),label="Forward h=1e-2")
+plt.plot(x,np.abs(d_forw_h2-f1(x)),label="Forward h=1e-4")
+plt.plot(x,np.abs(d_back_h1-f1(x)),label="Backward h=1e-2")
+plt.plot(x,np.abs(d_back_h2-f1(x)),label="Backward h=1e-4")
+plt.plot(x,np.abs(d_cent_h1-f1(x)),label="Central h=1e-2")
+plt.plot(x,np.abs(d_cent_h2-f1(x)),label="Central h=1e-4")
+plt.yscale("log")
+plt.title("Error absoluto primera derivada")
+plt.legend()
+plt.grid()
+plt.show()
+
+# Segunda derivada
+d2_h1 = nd.Derivative(f, n=2, method='central', order=4, step=h1)(x)
+d2_h2 = nd.Derivative(f, n=2, method='central', order=4, step=h2)(x)
+
+plt.figure(figsize=(10,6))
+plt.plot(x,f2(x),label="Exacta",linewidth=3)
+plt.plot(x,d2_h1,label="h=1e-2")
+plt.plot(x,d2_h2,label="h=1e-4")
+plt.title("Segunda derivada")
+plt.legend()
+plt.grid()
+plt.show()
+
+# Error segunda derivada
+plt.figure(figsize=(10,6))
+plt.plot(x,np.abs(d2_h1-f2(x)),label="h=1e-2")
+plt.plot(x,np.abs(d2_h2-f2(x)),label="h=1e-4")
+plt.yscale("log")
+plt.title("Error absoluto segunda derivada")
+plt.legend()
+plt.grid()
+plt.show()
+```
+
+# Ejercicio 2
+
+Elige 3 indicadores económicos del INEGI (del archivo `TIE_Inegi_long.xlsx`), realiza la gráfica de la serie temporal y de su derivada. Brinda un análisis de la gráfica y de la evolución del indicador a lo largo del tiempo.
+
+```{python}
+#| code-fold: true
+
+import numpy as np
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+from scipy import integrate
+import pandas as pd
+```
+
+```{python}
+#| code-fold: true
+
+df = pd.read_excel("TIE_Inegi_long.xlsx")
+df["Fecha"] = pd.to_datetime(df["Fecha"])
+df = df.sort_values("Fecha").reset_index(drop=True)
+
+# Indicadores seleccionados
+indicadores = { "Precios_consumidor":     "Precios al Consumidor (INPC)",
+"Tipo_cambio_nominal":    "Tipo de Cambio Nominal (MXN/USD)","Exportaciones_totales":  "Exportaciones Totales",}
+
+fig, axes = plt.subplots(3, 2, figsize=(16, 14))
+fig.suptitle("Indicadores económicos INEGI: serie temporal y derivada numérica",
+fontsize=13, fontweight="bold")
+
+colores = ["steelblue", "firebrick", "forestgreen"]
+
+for i, (col, nombre) in enumerate(indicadores.items()):
+    serie = df[col].values
+    fechas = df["Fecha"]
+
+    # Eliminar NaN
+    mask = ~np.isnan(serie)
+    s = serie[mask]
+    f = fechas[mask]
+
+    # Derivada numérica (diferencias centrales)
+    deriv = np.gradient(s, 1)
+
+    axes[i, 0].plot(f, s, color=colores[i], linewidth=1.5)
+    axes[i, 0].set_title(f"{nombre} — Serie temporal")
+    axes[i, 0].set_xlabel("Fecha")
+    axes[i, 0].set_ylabel("Valor")
+    axes[i, 0].grid(True, alpha=0.4)
+    axes[i, 0].tick_params(axis="x", rotation=30)
+
+    axes[i, 1].plot(f, deriv, color=colores[i], linewidth=1.5)
+    axes[i, 1].axhline(0, color="black", linewidth=0.8, linestyle="--")
+    axes[i, 1].set_title(f"{nombre} — Tasa de cambio mensual")
+    axes[i, 1].set_xlabel("Fecha")
+    axes[i, 1].set_ylabel("Δ / mes")
+    axes[i, 1].grid(True, alpha=0.4)
+    axes[i, 1].tick_params(axis="x", rotation=30)
+
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+#| code-fold: true
+
+# Gráficas interactivas 
+for i, (col, nombre) in enumerate(indicadores.items()):
+    s     = df[col].values
+    f     = df["Fecha"]
+    deriv = np.gradient(s, 1)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=f, y=s, mode="lines", name="Serie",
+line=dict(color=colores[i], width=2)))
+    fig.add_trace(go.Scatter(x=f, y=deriv, mode="lines", name="Derivada",
+line=dict(color=colores[i], width=1.5, dash="dash"),
+yaxis="y2"))
+    fig.update_layout(
+        title=nombre,
+        xaxis_title="Fecha",
+        yaxis=dict(title="Valor"),
+        yaxis2=dict(title="Δ / mes", overlaying="y", side="right", showgrid=False),
+        legend=dict(x=0.01, y=0.99),
+        template="plotly_white",
+        width=900, height=420,)
+    fig.show()
+```
+
+El INPC muestra una tendencia creciente sostenida desde 1993, con una aceleración notable a partir de 2021 reflejando el episodio inflacionario global. El Tipo de Cambio Nominal evidencia devaluaciones puntuales (1995, 2009, 2020) y una depreciación estructural del peso; su derivada permite identificar los momentos de mayor volatilidad cambiaria. Las Exportaciones Totales siguen una tendencia creciente con caídas en 2009 (crisis financiera) y 2020 (COVID-19), recuperándose rápidamente en ambos casos; la derivada muestra que el ritmo de crecimiento exportador se ha acelerado en los últimos años.
+
+# Ejercicio 3
+
+Calcular el valor exacto y las aproximaciones numéricas de la siguiente integral:
+
+\begin{equation}
+\int_0^4 x^2e^{-x} dx    
+\end{equation}
+
+Como en el primer ejemplo del archivo `Ejemplos_10_Int_num.qmd`.
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import integrate
+```
+
+```{python}
+#| code-fold: true
+
+# ∫_0^4 x^2 e^{-x} dx
+# Valor exacto: 2 - 26e^{-4}
+f3 = lambda x: x**2 * np.exp(-x)
+val_exacto = 2 - 26*np.exp(-4)
+print(f"Valor exacto: {val_exacto:.10f}\n")
+
+# scipy.integrate.quad
+q_val, q_err = integrate.quad(f3, 0, 4)
+print(f"quad:  {q_val:.10f}  (err est: {q_err:.2e})")
+
+# Trapecio y Simpson para distintos n
+print(f"\n{'n':>6}  {'Trapecio':>14}  {'Err Trap':>12}  {'Simpson':>14}  {'Err Simp':>12}")
+for n in [4, 8, 16, 32, 64, 128]:
+    x_n  = np.linspace(0, 4, n+1)
+    trap = integrate.trapezoid(f3(x_n), x_n)
+    simp = integrate.simpson(f3(x_n), x=x_n)
+    print(f"{n:>6}  {trap:14.10f}  {abs(trap-val_exacto):12.2e}  {simp:14.10f}  {abs(simp-val_exacto):12.2e}")
+
+# Gauss-Legendre
+print(f"\nGauss-Legendre:")
+for n in [2, 4, 6, 8, 10]:
+    pts, wts = np.polynomial.legendre.leggauss(n)
+    x_g = 2*pts + 2          # mapeo [-1,1] → [0,4]
+    w_g = 2*wts
+    gl  = np.sum(w_g * f3(x_g))
+    print(f"  n={n:2d}:  {gl:.10f}  err={abs(gl-val_exacto):.2e}")
+
+# Gráfica de convergencia
+ns = [4, 8, 16, 32, 64, 128, 256]
+err_trap = [abs(integrate.trapezoid(f3(np.linspace(0,4,n+1)), np.linspace(0,4,n+1)) - val_exacto) for n in ns]
+err_simp = [abs(integrate.simpson(f3(np.linspace(0,4,n+1)), x=np.linspace(0,4,n+1)) - val_exacto) for n in ns]
+
+plt.figure(figsize=(7, 4))
+plt.loglog(ns, err_trap, 'o-', label="Trapecio", color='steelblue')
+plt.loglog(ns, err_simp, 's-', label="Simpson",  color='firebrick')
+plt.xlabel("n"); plt.ylabel("Error absoluto")
+plt.title(r"Convergencia: $\int_0^4 x^2 e^{-x}\,dx$")
+plt.legend(); plt.grid(True, alpha=0.4)
+plt.tight_layout(); plt.show()
+```
+
+# Ejericicio 4
+
+Aproximar las siguientes integrales con la función `integrate.quad` (de SciPy) y con el método de Montecarlo, en cada caso hacer una gráfica de la función e indicar el área bajo la curva.
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import integrate
+```
+
+a)  
+
+\begin{equation}
+\int_0^1 e^{-x^2}\,dx
+\end{equation}
+
+```{python}
+def montecarlo_integral(f, a, b, N=500000):
+    x = np.random.uniform(a, b, N)
+    return (b-a)*np.mean(f(x))
+
+f = lambda x: np.exp(-x**2)
+
+quad_val, _ = integrate.quad(f, 0, 1)
+mc_val = montecarlo_integral(f, 0, 1)
+
+x = np.linspace(0, 1, 500)
+
+plt.figure(figsize=(7,5))
+plt.plot(x, f(x))
+plt.fill_between(x, f(x), alpha=0.3)
+plt.title(f"a) quad={quad_val:.6f} MC={mc_val:.6f}")
+plt.grid(True)
+plt.show()
+
+print("quad =", quad_val)
+print("Montecarlo =", mc_val)
+```
+
+b)  
+
+\begin{equation}
+\int_0^\pi sen(x^2)\,dx
+\end{equation}
+
+```{python}
+f = lambda x: np.sin(x**2)
+
+quad_val, _ = integrate.quad(f, 0, np.pi)
+mc_val = montecarlo_integral(f, 0, np.pi)
+
+x = np.linspace(0, np.pi, 500)
+
+plt.figure(figsize=(7,5))
+plt.plot(x, f(x))
+plt.fill_between(x, f(x), alpha=0.3)
+plt.title(f"b) quad={quad_val:.6f} MC={mc_val:.6f}")
+plt.grid(True)
+plt.show()
+
+print("quad =", quad_val)
+print("Montecarlo =", mc_val)
+```
+
+c)  
+
+\begin{equation}
+\int_\pi^{3\pi} \frac{sen(x)}{x}\,dx
+\end{equation}
+
+```{python}
+f = lambda x: np.sin(x)/x
+
+quad_val, _ = integrate.quad(f, np.pi, 3*np.pi)
+mc_val = montecarlo_integral(f, np.pi, 3*np.pi)
+
+x = np.linspace(np.pi, 3*np.pi, 500)
+
+plt.figure(figsize=(7,5))
+plt.plot(x, f(x))
+plt.fill_between(x, f(x), alpha=0.3)
+plt.title(f"c) quad={quad_val:.6f} MC={mc_val:.6f}")
+plt.grid(True)
+plt.show()
+
+print("quad =", quad_val)
+print("Montecarlo =", mc_val)
+```
+
+d)  
+
+\begin{equation}
+\int_0^\infty e^{-x^2} cos(x) \,dx
+\end{equation}
+
+```{python}
+def montecarlo_inf(f, N=500000):
+    t = np.random.uniform(0, 1, N)
+    x = t/(1-t)
+    jac = 1/(1-t)**2
+    return np.mean(f(x)*jac)
+
+f = lambda x: np.exp(-x**2)*np.cos(x)
+
+quad_val, _ = integrate.quad(f, 0, np.inf)
+mc_val = montecarlo_inf(f)
+
+x = np.linspace(0, 5, 500)
+
+plt.figure(figsize=(7,5))
+plt.plot(x, f(x))
+plt.fill_between(x, f(x), alpha=0.3)
+plt.title(f"d) quad={quad_val:.6f} MC={mc_val:.6f}")
+plt.grid(True)
+plt.show()
+
+print("quad =", quad_val)
+print("Montecarlo =", mc_val)
+```
+
+e)  
+
+\begin{equation}
+\int_0^1 x^x \,dx
+\end{equation}
+
+```{python}
+f = lambda x: x**x
+
+quad_val, _ = integrate.quad(f, 0, 1)
+mc_val = montecarlo_integral(f, 0, 1)
+
+x = np.linspace(0.0001, 1, 500)
+
+plt.figure(figsize=(7,5))
+plt.plot(x, f(x))
+plt.fill_between(x, f(x), alpha=0.3)
+plt.title(f"e) quad={quad_val:.6f} MC={mc_val:.6f}")
+plt.grid(True)
+plt.show()
+
+print("quad =", quad_val)
+print("Montecarlo =", mc_val)
+```
+
+f)  
+
+\begin{equation}
+\int_1^5 e^{-x^2} x^3 dx
+\end{equation}
+
+```{python}
+f = lambda x: np.exp(-x**2)*(x**3)
+
+quad_val, _ = integrate.quad(f, 1, 5)
+mc_val = montecarlo_integral(f, 1, 5)
+
+x = np.linspace(1, 5, 500)
+
+plt.figure(figsize=(7,5))
+plt.plot(x, f(x))
+plt.fill_between(x, f(x), alpha=0.3)
+plt.title(f"f) quad={quad_val:.6f} MC={mc_val:.6f}")
+plt.grid(True)
+plt.show()
+
+print("quad =", quad_val)
+print("Montecarlo =", mc_val)
+```
+
+g)  
+
+\begin{equation}
+\int_0^\infty \frac{x}{e^x-1} dx
+\end{equation}
+
+```{python}
+f = lambda x: x/(np.exp(x)-1)
+
+quad_val, _ = integrate.quad(f, 0, np.inf)
+mc_val = montecarlo_inf(f)
+
+x = np.linspace(0.01, 10, 500)
+
+plt.figure(figsize=(7,5))
+plt.plot(x, f(x))
+plt.fill_between(x, f(x), alpha=0.3)
+plt.title(f"g) quad={quad_val:.6f} MC={mc_val:.6f}")
+plt.grid(True)
+plt.show()
+
+print("quad =", quad_val)
+print("Montecarlo =", mc_val)
+```
+
+h)  
+
+\begin{equation}
+\int_0^1 \frac{1}{\sqrt{x^4+1}} dx
+\end{equation}
+
+```{python}
+f = lambda x: 1/np.sqrt(x**4 + 1)
+
+quad_val, _ = integrate.quad(f, 0, 1)
+mc_val = montecarlo_integral(f, 0, 1)
+
+x = np.linspace(0, 1, 500)
+
+plt.figure(figsize=(7,5))
+plt.plot(x, f(x))
+plt.fill_between(x, f(x), alpha=0.3)
+plt.title(f"h) quad={quad_val:.6f} MC={mc_val:.6f}")
+plt.grid(True)
+plt.show()
+
+print("quad =", quad_val)
+print("Montecarlo =", mc_val)
+```
+
+# Ejercicio 5
+
+Aproximar las siguientes integrales dobles y triples, llevar a cabo la gráfica cuando se indique y comparar con el valor *exacto* de la integral.
+
+a)  Realizar gráfica
+
+\begin{equation}
+\int_{-1}^{1}\int_1^2 (3y^2-x^2+5) dx dy
+\end{equation}
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+
+from scipy.integrate import dblquad, tplquad
+```
+
+```{python}
+f5a       = lambda x, y: 3*y**2 - x**2 + 5
+exacto_5a = 22/3
+
+res_5a, _ = dblquad(f5a, -1, 1, 1, 2)
+
+print(f"5a) Exacto={exacto_5a:.8f}  dblquad={res_5a:.8f}  err={abs(res_5a-exacto_5a):.2e}")
+
+# Gráfica 3D
+xg = np.linspace(1, 2, 50)
+yg = np.linspace(-1, 1, 50)
+
+Xg, Yg = np.meshgrid(xg, yg)
+
+fig_5a = go.Figure(data=[go.Surface(
+    z=f5a(Xg, Yg),
+    x=Xg,
+    y=Yg,
+    colorscale='Viridis',
+    opacity=0.85)])
+
+fig_5a.update_layout(
+    title="5a) f(x,y)=3y²-x²+5",
+    scene=dict(
+        xaxis_title='x',
+        yaxis_title='y',
+        zaxis_title='f'
+    ),
+    width=700,
+    height=500)
+
+fig_5a.show()
+```
+
+b)  
+
+\begin{equation}
+\int_{0}^{6}\int_1^5 \sqrt{x+4y} dx dy
+\end{equation}
+
+```{python}
+f5b = lambda x, y: np.sqrt(x + 4*y)
+
+res_5b, _ = dblquad(f5b, 0, 6, 1, 5)
+
+print(f"\n5b) dblquad={res_5b:.8f}")
+
+# Gráfica 3D
+xg = np.linspace(1, 5, 50)
+yg = np.linspace(0, 6, 50)
+
+Xg, Yg = np.meshgrid(xg, yg)
+
+fig_5b = go.Figure(data=[go.Surface(
+    z=f5b(Xg, Yg),
+    x=Xg,
+    y=Yg,
+    colorscale='Plasma',
+    opacity=0.85)])
+
+fig_5b.update_layout(
+    title="5b) f(x,y)=√(x+4y)",
+    scene=dict(
+        xaxis_title='x',
+        yaxis_title='y',
+        zaxis_title='f'
+    ),
+    width=700,
+    height=500)
+fig_5b.show()
+```
+
+c)  
+
+\begin{equation}
+\int_{1}^{e}\int_0^{log(x)} x^3 dx dy
+\end{equation}
+
+```{python}
+# c) ∫₁ᵉ ∫₀ˡⁿ⁽ˣ⁾ x³ dy dx  |  Exacto: 3e⁴/16 + 1/16
+
+f5c       = lambda y, x: x**3
+exacto_5c = 3*np.e**4/16 + 1/16
+
+res_5c, _ = dblquad(
+    f5c,
+    1,
+    np.e,
+    lambda x: 0,
+    lambda x: np.log(x))
+
+print(f"\n5c) Exacto={exacto_5c:.8f}  dblquad={res_5c:.8f}  err={abs(res_5c-exacto_5c):.2e}")
+
+# Dominio
+
+x_c = np.linspace(1, np.e, 300)
+
+plt.figure(figsize=(6,5))
+
+plt.fill_between(
+    x_c,
+    0,
+    np.log(x_c),
+    color='steelblue',
+    alpha=0.4,
+    label='Dominio')
+
+plt.plot(
+    x_c,
+    np.log(x_c),
+    'steelblue',
+    linewidth=2,
+    label=r'$y=\ln(x)$')
+
+plt.xlabel('x')
+plt.ylabel('y')
+
+plt.title(
+    f"5c) Dominio de integración | Integral={res_5c:.4f}")
+
+plt.legend()
+plt.grid(True, alpha=0.4)
+plt.tight_layout()
+plt.show()
+```
+
+d)  
+
+\begin{equation}
+\int\int_D 30ye^x dx dy
+\end{equation}
+
+Donde $D\subset \mathbb{R}^2$ es la región en la siguiente gráfica.
+
+```{python}
+f5d       = lambda y, x: 30*y*np.exp(x)
+exacto_5d = (225/8)*(7*np.exp(4) + 1)
+res_5d, _ = dblquad(
+    f5d,
+    0, 4,
+    lambda x: x/4,
+    lambda x: x)
+
+print(f"\n5d) Exacto={exacto_5d:.8f}  dblquad={res_5d:.8f}  err={abs(res_5d-exacto_5d):.2e}")
+
+# Gráfica
+x_d = np.linspace(0, 4, 300)
+
+plt.figure(figsize=(6, 5))
+
+plt.fill_between(
+    x_d,
+    x_d/4,
+    x_d,
+    color='firebrick',
+    alpha=0.4,
+    label='Dominio')
+plt.plot(x_d, x_d/4, 'firebrick', linewidth=2, label=r'$y=x/4$')
+plt.plot(x_d, x_d, 'darkred', linewidth=2, label=r'$y=x$')
+plt.xlabel('x')
+plt.ylabel('y')
+
+plt.title(
+f"5d) Dominio: y en [x/4,x]  |  Integral={res_5d:.4f}")
+plt.legend()
+plt.grid(True, alpha=0.4)
+plt.tight_layout()
+plt.show()
+```
+
+e)  
+
+\begin{equation}
+\int\int \int_B z e^{x+y} dx\, dy\, dz, \, B=[0,1] \times [0,1] \times [0,1]
+\end{equation}
+
+```{python}
+f5e       = lambda z, y, x: z*np.exp(x+y)
+exacto_5e = 0.5*(np.e-1)**2
+
+res_5e, _ = tplquad(f5e, 0, 1, 0, 1, 0, 1)
+
+print(f"\n5e) Exacto={exacto_5e:.8f}  tplquad={res_5e:.8f}  err={abs(res_5e-exacto_5e):.2e}")
+
+# Gráfica 3D
+xg = np.linspace(0,1,50)
+yg = np.linspace(0,1,50)
+
+Xg, Yg = np.meshgrid(xg, yg)
+
+fig_5e = go.Figure(data=[go.Surface(
+    z=np.exp(Xg+Yg),
+    x=Xg,
+    y=Yg,
+    colorscale='Cividis',
+    opacity=0.85)])
+
+fig_5e.update_layout(
+    title="5e) f(x,y)=e^(x+y)",
+    scene=dict(
+        xaxis_title='x',
+        yaxis_title='y',
+        zaxis_title='e^(x+y)'
+    ),
+    width=700,
+    height=500)
+fig_5e.show()
+```
+
+f)  
+
+\begin{equation}
+\int_0^1 \int_0^x \int_0^y (y+xz) dz\, dy\, dx
+\end{equation}
+
+```{python}
+f5f       = lambda z, y, x: y + x*z
+exacto_5f = 7/60
+res_5f, _ = tplquad(
+    f5f,
+    0, 1,
+    0, lambda x: x,
+    0, lambda x, y: y)
+
+print(f"\n5f) Exacto={exacto_5f:.8f}  tplquad={res_5f:.8f}  err={abs(res_5f-exacto_5f):.2e}")
+
+# Dominio
+
+x_f = np.linspace(0,1,300)
+
+plt.figure(figsize=(6,5))
+
+plt.fill_between(
+    x_f,
+    0,
+    x_f,
+    color='forestgreen',
+    alpha=0.4,
+    label='Dominio')
+
+plt.plot(
+    x_f,
+    x_f,
+    'forestgreen',
+    linewidth=2,
+    label=r'$y=x$')
+
+plt.xlabel('x')
+plt.ylabel('y')
+
+plt.title(
+    f"5f) Dominio de integración | Integral={res_5f:.4f}")
+
+plt.legend()
+plt.grid(True, alpha=0.4)
+plt.tight_layout()
+plt.show()
+```
+
+# Ejercicio 6
+
+De `scipy.stats` elige 5 distribuciones continuas diferentes de probabilidad continua, realiza la gráfica y encuentra la probabilidad que la variable aleatoria tome un valor en un intervalo dado. Compara el resultado con el método `cdf`.
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import stats
+from scipy import integrate
+
+distribuciones = [
+    {'nombre': 'Normal N(0,1)', 'dist': stats.norm(loc=0, scale=1),
+     'a': -1, 'b': 1, 'x_range': (-4, 4), 'color': 'steelblue', 'itv': '[-1,1]'},
+
+    {'nombre': 'Exponencial Exp(2)', 'dist': stats.expon(scale=0.5),
+     'a': 0, 'b': 1, 'x_range': (0, 4), 'color': 'firebrick', 'itv': '[0,1]'},
+
+    {'nombre': 'Beta(2,5)', 'dist': stats.beta(a=2, b=5),
+     'a': 0.2, 'b': 0.6, 'x_range': (0, 1), 'color': 'forestgreen', 'itv': '[0.2,0.6]'},
+
+    {'nombre': 'Gamma(3,2)', 'dist': stats.gamma(a=3, scale=2),
+     'a': 2, 'b': 8, 'x_range': (0, 16), 'color': 'darkorange', 'itv': '[2,8]'},
+
+    {'nombre': 't-Student(5)', 'dist': stats.t(df=5),
+     'a': -2, 'b': 2, 'x_range': (-5, 5), 'color': 'mediumpurple', 'itv': '[-2,2]'}]
+
+fig, axes = plt.subplots(2, 3, figsize=(16, 9))
+fig.suptitle("Ejercicio 6: Distribuciones continuas de probabilidad",fontsize=13, fontweight='bold')
+
+axes_flat = axes.flatten()
+
+print(f"{'Distribución':<22} {'Intervalo':>10} {'quad':>14} {'CDF':>14} {'|Dif|':>12}")
+print("-" * 76)
+
+for i, d in enumerate(distribuciones):
+
+    dist = d['dist']
+    a = d['a']
+    b = d['b']
+
+    xf = np.linspace(d['x_range'][0], d['x_range'][1], 500)
+    xfil = np.linspace(a, b, 300)
+
+    ax = axes_flat[i]
+
+    ax.plot(xf, dist.pdf(xf), color=d['color'], linewidth=2.5)
+    ax.fill_between(xfil, dist.pdf(xfil),
+                    color=d['color'], alpha=0.4)
+
+    prob_q, _ = integrate.quad(dist.pdf, a, b)
+    prob_c = dist.cdf(b) - dist.cdf(a)
+
+    ax.set_title(
+        f"{d['nombre']}\nP{d['itv']} = {prob_c:.6f}",
+        fontsize=9)
+
+    ax.set_xlabel("x")
+    ax.set_ylabel("f(x)")
+    ax.grid(True, alpha=0.4)
+
+    print(
+f"{d['nombre']:<22} "
+f"{d['itv']:>10} "
+f"{prob_q:14.10f} "
+f"{prob_c:14.10f} "
+f"{abs(prob_q-prob_c):12.2e}")
+
+# Ocultar el sexto espacio vacío
+axes_flat[-1].axis('off')
+
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+#Normal N(0,1)
+
+dist = stats.norm(loc=0, scale=1)
+
+a, b = -1, 1
+
+x = np.linspace(-4, 4, 500)
+
+prob_q, _ = integrate.quad(dist.pdf, a, b)
+prob_c = dist.cdf(b) - dist.cdf(a)
+
+plt.figure(figsize=(7,4))
+
+plt.plot(x, dist.pdf(x), color='steelblue', linewidth=2)
+
+x_fill = np.linspace(a, b, 300)
+plt.fill_between(x_fill, dist.pdf(x_fill),
+                 color='steelblue', alpha=0.4)
+
+plt.title(f"Normal N(0,1)\nP([-1,1])={prob_c:.6f}")
+plt.xlabel("x")
+plt.ylabel("f(x)")
+plt.grid(True, alpha=0.4)
+
+plt.show()
+
+print(f"quad = {prob_q:.10f}")
+print(f"cdf  = {prob_c:.10f}")
+print(f"error = {abs(prob_q-prob_c):.2e}")
+```
+
+```{python}
+#Exponencial Exp(2)
+
+dist = stats.expon(scale=0.5)
+
+a, b = 0, 1
+
+x = np.linspace(0, 4, 500)
+
+prob_q, _ = integrate.quad(dist.pdf, a, b)
+prob_c = dist.cdf(b) - dist.cdf(a)
+
+plt.figure(figsize=(7,4))
+
+plt.plot(x, dist.pdf(x), color='firebrick', linewidth=2)
+
+x_fill = np.linspace(a, b, 300)
+plt.fill_between(x_fill, dist.pdf(x_fill),
+                 color='firebrick', alpha=0.4)
+
+plt.title(f"Exponencial Exp(2)\nP([0,1])={prob_c:.6f}")
+plt.xlabel("x")
+plt.ylabel("f(x)")
+plt.grid(True, alpha=0.4)
+
+plt.show()
+
+print(f"quad = {prob_q:.10f}")
+print(f"cdf  = {prob_c:.10f}")
+print(f"error = {abs(prob_q-prob_c):.2e}")
+```
+
+```{python}
+#Beta(2,5)
+
+dist = stats.beta(a=2, b=5)
+
+a, b = 0.2, 0.6
+
+x = np.linspace(0, 1, 500)
+
+prob_q, _ = integrate.quad(dist.pdf, a, b)
+prob_c = dist.cdf(b) - dist.cdf(a)
+
+plt.figure(figsize=(7,4))
+
+plt.plot(x, dist.pdf(x), color='forestgreen', linewidth=2)
+
+x_fill = np.linspace(a, b, 300)
+plt.fill_between(x_fill, dist.pdf(x_fill),
+                 color='forestgreen', alpha=0.4)
+
+plt.title(f"Beta(2,5)\nP([0.2,0.6])={prob_c:.6f}")
+plt.xlabel("x")
+plt.ylabel("f(x)")
+plt.grid(True, alpha=0.4)
+
+plt.show()
+
+print(f"quad = {prob_q:.10f}")
+print(f"cdf  = {prob_c:.10f}")
+print(f"error = {abs(prob_q-prob_c):.2e}")
+```
+
+```{python}
+#Gamma(3,2)
+
+dist = stats.gamma(a=3, scale=2)
+
+a, b = 2, 8
+
+x = np.linspace(0, 16, 500)
+
+prob_q, _ = integrate.quad(dist.pdf, a, b)
+prob_c = dist.cdf(b) - dist.cdf(a)
+
+plt.figure(figsize=(7,4))
+
+plt.plot(x, dist.pdf(x), color='darkorange', linewidth=2)
+
+x_fill = np.linspace(a, b, 300)
+plt.fill_between(x_fill, dist.pdf(x_fill),
+                 color='darkorange', alpha=0.4)
+
+plt.title(f"Gamma(3,2)\nP([2,8])={prob_c:.6f}")
+plt.xlabel("x")
+plt.ylabel("f(x)")
+plt.grid(True, alpha=0.4)
+
+plt.show()
+
+print(f"quad = {prob_q:.10f}")
+print(f"cdf  = {prob_c:.10f}")
+print(f"error = {abs(prob_q-prob_c):.2e}")
+```
+
+```{python}
+#t-Student(5)
+
+dist = stats.t(df=5)
+
+a, b = -2, 2
+
+x = np.linspace(-5, 5, 500)
+
+prob_q, _ = integrate.quad(dist.pdf, a, b)
+prob_c = dist.cdf(b) - dist.cdf(a)
+
+plt.figure(figsize=(7,4))
+
+plt.plot(x, dist.pdf(x), color='mediumpurple', linewidth=2)
+
+x_fill = np.linspace(a, b, 300)
+plt.fill_between(x_fill, dist.pdf(x_fill),
+                 color='mediumpurple', alpha=0.4)
+
+plt.title(f"t-Student(5)\nP([-2,2])={prob_c:.6f}")
+plt.xlabel("x")
+plt.ylabel("f(x)")
+plt.grid(True, alpha=0.4)
+
+plt.show()
+
+print(f"quad = {prob_q:.10f}")
+print(f"cdf  = {prob_c:.10f}")
+print(f"error = {abs(prob_q-prob_c):.2e}")
+```
